@@ -1,0 +1,494 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.4.5",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "data.aws_availability_zones.available",
+          "mode": "data",
+          "type": "aws_availability_zones",
+          "name": "available",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "all_availability_zones": null,
+            "exclude_names": null,
+            "exclude_zone_ids": null,
+            "filter": null,
+            "group_names": [
+              "ap-northeast-1"
+            ],
+            "id": "ap-northeast-1",
+            "names": [
+              "ap-northeast-1a",
+              "ap-northeast-1c",
+              "ap-northeast-1d"
+            ],
+            "state": "available",
+            "timeouts": null,
+            "zone_ids": [
+              "apne1-az4",
+              "apne1-az1",
+              "apne1-az2"
+            ]
+          },
+          "sensitive_values": {
+            "group_names": [
+              false
+            ],
+            "names": [
+              false,
+              false,
+              false
+            ],
+            "zone_ids": [
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        {
+          "address": "data.aws_vpc.vpc",
+          "mode": "data",
+          "type": "aws_vpc",
+          "name": "vpc",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "arn": "arn:aws:ec2:ap-northeast-1:1234567890:vpc/vpc-01234567890",
+            "cidr_block": "10.1.0.0/16",
+            "cidr_block_associations": [
+              {
+                "association_id": "vpc-cidr-assoc-01234567890abce",
+                "cidr_block": "10.1.0.0/16",
+                "state": "associated"
+              }
+            ],
+            "default": false,
+            "dhcp_options_id": "dopt-12345678",
+            "enable_dns_hostnames": false,
+            "enable_dns_support": true,
+            "enable_network_address_usage_metrics": false,
+            "filter": null,
+            "id": "vpc-01234567890",
+            "instance_tenancy": "default",
+            "ipv6_association_id": "vpc-cidr-assoc-01234567890abcd",
+            "ipv6_cidr_block": "1234:1234:1234:1234::/56",
+            "main_route_table_id": "rtb-01234567890",
+            "owner_id": "1234567890",
+            "state": null,
+            "tags": {
+              "Environment": "test",
+              "Name": "myvpc",
+              "Owner": "mumoshu",
+              "Project": "test"
+            },
+            "timeouts": null
+          },
+          "sensitive_values": {
+            "cidr_block_associations": [
+              {}
+            ],
+            "tags": {}
+          }
+        },
+        {
+          "address": "aws_eks_cluster.cluster",
+          "mode": "managed",
+          "type": "aws_eks_cluster",
+          "name": "cluster",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "arn": "arn:aws:eks:ap-northeast-1:1234567890:cluster/testkitexamplecluster",
+            "certificate_authority": [
+              {
+                "data": "examplecadata"
+              }
+            ],
+            "cluster_id": null,
+            "created_at": "2023-12-06 07:32:06.2 +0000 UTC",
+            "enabled_cluster_log_types": null,
+            "encryption_config": [],
+            "endpoint": "https://1234567890ABCDEF.yl4.ap-northeast-1.eks.amazonaws.com",
+            "id": "testkitexamplecluster",
+            "identity": [
+              {
+                "oidc": [
+                  {
+                    "issuer": "https://oidc.eks.ap-northeast-1.amazonaws.com/id/1234567890ABCDEF"
+                  }
+                ]
+              }
+            ],
+            "kubernetes_network_config": [
+              {
+                "ip_family": "ipv4",
+                "service_ipv4_cidr": "172.20.0.0/16",
+                "service_ipv6_cidr": ""
+              }
+            ],
+            "name": "testkitexamplecluster",
+            "outpost_config": [],
+            "platform_version": "eks.4",
+            "role_arn": "arn:aws:iam::1234567890:role/testkitexamplecluster",
+            "status": "ACTIVE",
+            "tags": null,
+            "tags_all": {},
+            "timeouts": null,
+            "version": "1.28",
+            "vpc_config": [
+              {
+                "cluster_security_group_id": "sg-01234567890b",
+                "endpoint_private_access": false,
+                "endpoint_public_access": true,
+                "public_access_cidrs": [
+                  "0.0.0.0/0"
+                ],
+                "security_group_ids": [
+                  "sg-01234567890"
+                ],
+                "subnet_ids": [
+                  "subnet-01234567890c",
+                  "subnet-01234567890a"
+                ],
+                "vpc_id": "vpc-01234567890"
+              }
+            ]
+          },
+          "sensitive_values": {
+            "certificate_authority": [
+              {}
+            ],
+            "encryption_config": [],
+            "identity": [
+              {
+                "oidc": [
+                  {}
+                ]
+              }
+            ],
+            "kubernetes_network_config": [
+              {}
+            ],
+            "outpost_config": [],
+            "tags_all": {},
+            "vpc_config": [
+              {
+                "public_access_cidrs": [
+                  false
+                ],
+                "security_group_ids": [
+                  false
+                ],
+                "subnet_ids": [
+                  false,
+                  false
+                ]
+              }
+            ]
+          },
+          "depends_on": [
+            "aws_iam_role.cluster",
+            "aws_security_group.cluster",
+            "aws_subnet.public",
+            "data.aws_availability_zones.available",
+            "data.aws_vpc.vpc"
+          ]
+        },
+        {
+          "address": "aws_iam_role.cluster",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "cluster",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "arn": "arn:aws:iam::1234567890:role/testkitexamplecluster",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"eks.amazonaws.com\"},\"Sid\":\"\"}],\"Version\":\"2012-10-17\"}",
+            "create_date": "2023-12-06T07:29:23Z",
+            "description": "",
+            "force_detach_policies": false,
+            "id": "testkitexamplecluster",
+            "inline_policy": [],
+            "managed_policy_arns": [],
+            "max_session_duration": 3600,
+            "name": "testkitexamplecluster",
+            "name_prefix": "",
+            "path": "/",
+            "permissions_boundary": "",
+            "tags": {},
+            "tags_all": {},
+            "unique_id": "ABCDEFG01234567890"
+          },
+          "sensitive_values": {
+            "inline_policy": [],
+            "managed_policy_arns": [],
+            "tags": {},
+            "tags_all": {}
+          }
+        },
+        {
+          "address": "aws_s3_bucket.bucket",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "bucket",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "acceleration_status": "",
+            "acl": null,
+            "arn": "arn:aws:s3:::testkitexamplebucket",
+            "bucket": "testkitexamplebucket",
+            "bucket_domain_name": "testkitexamplebucket.s3.amazonaws.com",
+            "bucket_prefix": "",
+            "bucket_regional_domain_name": "testkitexamplebucket.s3.ap-northeast-1.amazonaws.com",
+            "cors_rule": [],
+            "force_destroy": false,
+            "grant": [
+              {
+                "id": "1234567890abcde",
+                "permissions": [
+                  "FULL_CONTROL"
+                ],
+                "type": "CanonicalUser",
+                "uri": ""
+              }
+            ],
+            "hosted_zone_id": "ABCDEFGHIJKLMN",
+            "id": "testkitexamplebucket",
+            "lifecycle_rule": [],
+            "logging": [],
+            "object_lock_configuration": [],
+            "object_lock_enabled": false,
+            "policy": "",
+            "region": "ap-northeast-1",
+            "replication_configuration": [],
+            "request_payer": "BucketOwner",
+            "server_side_encryption_configuration": [
+              {
+                "rule": [
+                  {
+                    "apply_server_side_encryption_by_default": [
+                      {
+                        "kms_master_key_id": "",
+                        "sse_algorithm": "AES256"
+                      }
+                    ],
+                    "bucket_key_enabled": false
+                  }
+                ]
+              }
+            ],
+            "tags": {},
+            "tags_all": {},
+            "timeouts": null,
+            "versioning": [
+              {
+                "enabled": false,
+                "mfa_delete": false
+              }
+            ],
+            "website": [],
+            "website_domain": null,
+            "website_endpoint": null
+          },
+          "sensitive_values": {
+            "cors_rule": [],
+            "grant": [
+              {
+                "permissions": [
+                  false
+                ]
+              }
+            ],
+            "lifecycle_rule": [],
+            "logging": [],
+            "object_lock_configuration": [],
+            "replication_configuration": [],
+            "server_side_encryption_configuration": [
+              {
+                "rule": [
+                  {
+                    "apply_server_side_encryption_by_default": [
+                      {}
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tags": {},
+            "tags_all": {},
+            "versioning": [
+              {}
+            ],
+            "website": []
+          }
+        },
+        {
+          "address": "aws_security_group.cluster",
+          "mode": "managed",
+          "type": "aws_security_group",
+          "name": "cluster",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 1,
+          "values": {
+            "arn": "arn:aws:ec2:ap-northeast-1:1234567890:security-group/sg-01234567890",
+            "description": "Managed by Terraform",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-01234567890",
+            "ingress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 443,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 443
+              }
+            ],
+            "name": "testkitexamplecluster",
+            "name_prefix": "",
+            "owner_id": "1234567890",
+            "revoke_rules_on_delete": false,
+            "tags": {},
+            "tags_all": {},
+            "timeouts": null,
+            "vpc_id": "vpc-01234567890"
+          },
+          "sensitive_values": {
+            "egress": [
+              {
+                "cidr_blocks": [
+                  false
+                ],
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "security_groups": []
+              }
+            ],
+            "ingress": [
+              {
+                "cidr_blocks": [
+                  false
+                ],
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "security_groups": []
+              }
+            ],
+            "tags": {},
+            "tags_all": {}
+          },
+          "depends_on": [
+            "data.aws_vpc.vpc"
+          ]
+        },
+        {
+          "address": "aws_subnet.public[0]",
+          "mode": "managed",
+          "type": "aws_subnet",
+          "name": "public",
+          "index": 0,
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 1,
+          "values": {
+            "arn": "arn:aws:ec2:ap-northeast-1:1234567890:subnet/subnet-01234567890a",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "ap-northeast-1a",
+            "availability_zone_id": "apne1-az4",
+            "cidr_block": "10.1.160.0/20",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-01234567890a",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": false,
+            "outpost_arn": "",
+            "owner_id": "1234567890",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {},
+            "tags_all": {},
+            "timeouts": null,
+            "vpc_id": "vpc-01234567890"
+          },
+          "sensitive_values": {
+            "tags": {},
+            "tags_all": {}
+          },
+          "depends_on": [
+            "data.aws_availability_zones.available",
+            "data.aws_vpc.vpc"
+          ]
+        },
+        {
+          "address": "aws_subnet.public[1]",
+          "mode": "managed",
+          "type": "aws_subnet",
+          "name": "public",
+          "index": 1,
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 1,
+          "values": {
+            "arn": "arn:aws:ec2:ap-northeast-1:1234567890:subnet/subnet-01234567890c",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "ap-northeast-1c",
+            "availability_zone_id": "apne1-az1",
+            "cidr_block": "10.1.176.0/20",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-01234567890c",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": false,
+            "outpost_arn": "",
+            "owner_id": "1234567890",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": null,
+            "tags_all": {},
+            "timeouts": null,
+            "vpc_id": "vpc-01234567890"
+          },
+          "sensitive_values": {
+            "tags_all": {}
+          },
+          "depends_on": [
+            "data.aws_availability_zones.available",
+            "data.aws_vpc.vpc"
+          ]
+        }
+      ]
+    }
+  }
+}

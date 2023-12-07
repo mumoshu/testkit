@@ -1,0 +1,6 @@
+.vscode
+.env
+.envrc
+testdata/terraform/.terraform*
+testdata/terraform/terraform.tfstate*
+testdata/terraform/*kubeconfig
