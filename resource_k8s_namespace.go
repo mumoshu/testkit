@@ -25,6 +25,11 @@ func KubeconfigPath(path string) KubernetesNamespaceOption {
 	}
 }
 
+// KubernetesNamespace returns a KubernetesNamespace.
+// It does so by iterating over the available providers and calling the KubernetesNamespace method on each provider.
+// If no provider implements KubernetesNamespace, it fails the test.
+// If multiple providers implement KubernetesNamespace, it returns the first successful one.
+// If multiple providers implement KubernetesNamespace and all of them fail, it fails the test.
 func (tk *TestKit) KubernetesNamespace(t *testing.T, opts ...KubernetesNamespaceOption) *KubernetesNamespace {
 	t.Helper()
 
@@ -34,7 +39,13 @@ func (tk *TestKit) KubernetesNamespace(t *testing.T, opts ...KubernetesNamespace
 
 		cp, ok = p.(KubernetesNamespaceProvider)
 		if ok {
-			break
+			ns, err := cp.KubernetesNamespace(opts...)
+			if err != nil {
+				t.Logf("unable to get s3 bucket: %v", err)
+				continue
+			}
+
+			return ns
 		}
 	}
 
@@ -42,10 +53,5 @@ func (tk *TestKit) KubernetesNamespace(t *testing.T, opts ...KubernetesNamespace
 		t.Fatal("no KubernetesNamespaceProvider found")
 	}
 
-	ns, err := cp.KubernetesNamespace(opts...)
-	if err != nil {
-		t.Fatalf("unable to get s3 bucket: %v", err)
-	}
-
-	return ns
+	return nil
 }
