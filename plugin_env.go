@@ -63,3 +63,66 @@ func (p *EnvProvider) GetS3Bucket(_ ...S3BucketOption) (*S3Bucket, error) {
 		profile: profile,
 	}, nil
 }
+
+func (p *EnvProvider) GetGitHubRepository(_ ...GitHubRepositoryOption) (*GitHubRepository, error) {
+	repo := os.Getenv("TESTKIT_GITHUB_REPO")
+	if repo == "" {
+		return nil, fmt.Errorf("TESTKIT_GITHUB_REPO environment variable is not set")
+	}
+
+	token := os.Getenv("TESTKIT_GITHUB_TOKEN")
+	if token == "" {
+		return nil, fmt.Errorf("TESTKIT_GITHUB_TOKEN environment variable is not set")
+	}
+
+	return &GitHubRepository{
+		Name:  repo,
+		Token: token,
+	}, nil
+}
+
+func (p *EnvProvider) GetSlackChannel(_ ...SlackChannelOption) (*SlackChannel, error) {
+	channel := os.Getenv("TESTKIT_SLACK_CHANNEL")
+	if channel == "" {
+		return nil, fmt.Errorf("TESTKIT_SLACK_CHANNEL environment variable is not set")
+	}
+
+	token := os.Getenv("TESTKIT_SLACK_TOKEN")
+	if token == "" {
+		return nil, fmt.Errorf("TESTKIT_SLACK_TOKEN environment variable is not set")
+	}
+
+	inURL := os.Getenv("TESTKIT_SLACK_INCOMING_WEBHOOK_URL")
+	if inURL == "" {
+		return nil, fmt.Errorf("TESTKIT_SLACK_INCOMING_WEBHOOK_URL environment variable is not set")
+	}
+
+	return &SlackChannel{
+		ID:                 channel,
+		Token:              token,
+		IncomingWebhookURL: inURL,
+	}, nil
+}
+
+func (p *EnvProvider) GetChatworkRoom(_ ...ChatworkRoomOption) (*ChatworkRoom, error) {
+	room := os.Getenv("TESTKIT_CHATWORK_ROOM")
+	if room == "" {
+		return nil, fmt.Errorf("TESTKIT_CHATWORK_ROOM environment variable is not set")
+	}
+
+	token := os.Getenv("TESTKIT_CHATWORK_TOKEN")
+	if token == "" {
+		return nil, fmt.Errorf("TESTKIT_CHATWORK_TOKEN environment variable is not set")
+	}
+
+	inURL := os.Getenv("TESTKIT_CHATWORK_INCOMING_WEBHOOK_URL")
+	if inURL == "" {
+		return nil, fmt.Errorf("TESTKIT_CHATWORK_INCOMING_WEBHOOK_URL environment variable is not set")
+	}
+
+	return &ChatworkRoom{
+		ID:                 room,
+		Token:              token,
+		IncomingWebhookURL: inURL,
+	}, nil
+}
