@@ -105,7 +105,7 @@ func (p *EnvProvider) GetSlackChannel(_ ...SlackChannelOption) (*SlackChannel, e
 }
 
 func (p *EnvProvider) GetChatworkRoom(_ ...ChatworkRoomOption) (*ChatworkRoom, error) {
-	room := os.Getenv("TESTKIT_CHATWORK_ROOM")
+	room := os.Getenv("TESTKIT_CHATWORK_ROOM_ID")
 	if room == "" {
 		return nil, fmt.Errorf("TESTKIT_CHATWORK_ROOM environment variable is not set")
 	}
@@ -115,14 +115,8 @@ func (p *EnvProvider) GetChatworkRoom(_ ...ChatworkRoomOption) (*ChatworkRoom, e
 		return nil, fmt.Errorf("TESTKIT_CHATWORK_TOKEN environment variable is not set")
 	}
 
-	inURL := os.Getenv("TESTKIT_CHATWORK_INCOMING_WEBHOOK_URL")
-	if inURL == "" {
-		return nil, fmt.Errorf("TESTKIT_CHATWORK_INCOMING_WEBHOOK_URL environment variable is not set")
-	}
-
 	return &ChatworkRoom{
-		ID:                 room,
-		Token:              token,
-		IncomingWebhookURL: inURL,
+		ID:    room,
+		Token: token,
 	}, nil
 }

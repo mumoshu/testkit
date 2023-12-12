@@ -106,7 +106,7 @@ func TestNew(t *testing.T) {
 	require.Equal(t, 1, cnt)
 }
 
-func TestKubectlProvider(t *testing.T) {
+func TestKindKubectl(t *testing.T) {
 	os.Unsetenv("KUBECONFIG")
 
 	tk := testkit.New(t, testkit.Providers(&testkit.KindProvider{}))

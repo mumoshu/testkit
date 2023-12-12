@@ -7,9 +7,8 @@ type ChatworkRoomProvider interface {
 }
 
 type ChatworkRoom struct {
-	ID                 string
-	Token              string
-	IncomingWebhookURL string
+	ID    string
+	Token string
 }
 
 type ChatworkRoomConfig struct {
