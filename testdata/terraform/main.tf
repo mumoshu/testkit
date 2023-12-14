@@ -81,3 +81,12 @@ resource "aws_subnet" "public" {
     cidr_block = "${cidrsubnet(data.aws_vpc.vpc.cidr_block, 4, 10+count.index)}"
     availability_zone = data.aws_availability_zones.available.names[count.index%length(data.aws_availability_zones.available.names)]
 }
+
+resource "aws_ecr_repository" "imagerepo" {
+  name                 = "${var.prefix}imagerepo"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+}
