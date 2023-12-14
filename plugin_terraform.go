@@ -160,6 +160,28 @@ func (p *TerraformProvider) GetS3Bucket(opts ...S3BucketOption) (*S3Bucket, erro
 	return nil, fmt.Errorf("unable to find S3 bucket")
 }
 
+func (p *TerraformProvider) GetECRImageRepository(opts ...ECRImageRepositoryOption) (*ECRImageRepository, error) {
+	resources, err := p.readECRImageRepository(bytes.NewReader(p.tfShowJSONBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, resource := range resources {
+		if resource.tfECRImageRepoValues == nil {
+			continue
+		}
+
+		return &ECRImageRepository{
+			ID:            resource.tfECRImageRepoValues.ID,
+			ARN:           resource.tfECRImageRepoValues.ARN,
+			RepositoryURL: resource.tfECRImageRepoValues.RepositoryURL,
+			RegistryID:    resource.tfECRImageRepoValues.RegistryID,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("unable to find ECR image repository")
+}
+
 type tfResource struct {
 	Address string `json:"address"`
 	// Mode can be e.g. "managed" or "data".
@@ -177,8 +199,9 @@ type tfResource struct {
 	ProviderName string          `json:"provider_name"`
 	Values       json.RawMessage `json:"values"`
 
-	S3BucketValues     *tfS3BucketValues   `json:"-"`
-	tfEKSClusterValues *tfEKSClusterValues `json:"-"`
+	S3BucketValues       *tfS3BucketValues           `json:"-"`
+	tfEKSClusterValues   *tfEKSClusterValues         `json:"-"`
+	tfECRImageRepoValues *tfECRImageRepositoryValues `json:"-"`
 }
 
 type tfS3BucketValues struct {
@@ -196,6 +219,28 @@ type tfEKSClusterValues struct {
 	Endpoint             string                             `json:"endpoint"`
 	ARN                  string                             `json:"arn"`
 	CertificateAuthority []tfEKSClusterCertificateAuthority `json:"certificate_authority"`
+}
+
+type tfECRImageRepositoryValues struct {
+	// ID is the name of the ECR image repository.
+	// In case the ARN is:
+	// 	arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/testkit-imagerep
+	// the ID is:
+	// 	testkit-imagerep
+	ID string `json:"id"`
+	// ARN is the Amazon Resource Name of the ECR image repository.
+	// In case the name of the repository is "testkit-imagerep",
+	// the ARN is:
+	// 	arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/testkit-imagerep
+	ARN string `json:"arn"`
+	// RepositoryURL is the URL of the ECR image repository.
+	// In case the name of the repository is "testkit-imagerep",
+	// the URL is:
+	// 	${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/testkit-imagerep
+	RepositoryURL string `json:"repository_url"`
+	// RegistryID is the ID of the registry.
+	// It's the same as the account ID.
+	RegistryID string `json:"registry_id"`
 }
 
 type tfEKSClusterCertificateAuthority struct {
@@ -284,6 +329,28 @@ func (p *TerraformProvider) readS3BucketResources(r io.Reader) ([]tfResource, er
 		}
 
 		r.S3BucketValues = &values
+
+		filteredResources = append(filteredResources, r)
+	}
+
+	return filteredResources, nil
+}
+
+func (p *TerraformProvider) readECRImageRepository(r io.Reader) ([]tfResource, error) {
+	rs, err := p.readResourcesOfType(r, "aws_ecr_repository")
+	if err != nil {
+		return nil, err
+	}
+
+	var filteredResources []tfResource
+
+	for _, r := range rs {
+		var values tfECRImageRepositoryValues
+		if err := json.Unmarshal(r.Values, &values); err != nil {
+			return nil, err
+		}
+
+		r.tfECRImageRepoValues = &values
 
 		filteredResources = append(filteredResources, r)
 	}
