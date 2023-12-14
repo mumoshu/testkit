@@ -13,7 +13,7 @@ It is handy when you want to write an integration or E2E tests for:
 - Terraform workspaces
 - ChatOps bots
 - Complex CI/CD workflows
-- AWS CDK projects
-- Pulumi projects
+- AWS CDK projects (Planned)
+- Pulumi projects (Planned)
 
 See [testkit_test.go](testkit_test.go) for inspiration on how you would write tests with `testkit`.
