@@ -116,7 +116,16 @@ func TestKindKubectl(t *testing.T) {
 		DefaultKubeconfigPath: kc.KubeconfigPath,
 	}))
 
-	_ = harness.KubernetesNamespace(t)
+	ns := harness.KubernetesNamespace(t)
+	ns2 := harness.KubernetesNamespace(t)
+	defaultCM1 := harness.KubernetesConfigMap(t)
+	defaultCM2 := harness.KubernetesConfigMap(t)
+	nsCM1 := harness.KubernetesConfigMap(t, testkit.KubernetesConfigMapNamespace(ns.Name))
+	nsCM2 := harness.KubernetesConfigMap(t, testkit.KubernetesConfigMapNamespace(ns.Name))
+
+	require.Equal(t, ns, ns2)
+	require.Equal(t, defaultCM1, defaultCM2)
+	require.Equal(t, nsCM1, nsCM2)
 }
 
 func TestTerraform(t *testing.T) {
