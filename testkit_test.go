@@ -169,3 +169,47 @@ func TestTerraform(t *testing.T) {
 		"default",
 	)
 }
+
+func TestTerraformS3(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	tk := testkit.New(t, testkit.Providers(&testkit.TerraformProvider{
+		WorkspacePath: "testdata/terraform-s3",
+		Vars: map[string]string{
+			"prefix": "testkit-tfs3-",
+		},
+	}), testkit.RetainResourcesOnFailure())
+	bucket := tk.S3Bucket(t)
+
+	awsConfig := bucket.AWSV2Config(t)
+	s3BucketClient := testkit.NewS3BucketClient(awsConfig, bucket.Name)
+
+	require.Empty(t,
+		s3BucketClient.ListKeys(t, ""),
+	)
+
+	s3BucketClient.PutString(t, "my-object", "hello world")
+	require.Equal(t,
+		"hello world",
+		s3BucketClient.GetString(t, "my-object"),
+	)
+
+	require.Equal(t,
+		[]string{"my-object"},
+		s3BucketClient.ListKeys(t, "my-"),
+	)
+
+	require.Empty(t,
+		s3BucketClient.ListKeys(t, "your-"),
+	)
+
+	// Otherwise, the test cleanup i.e. the bucket deletion attempt by
+	// terraform-destroy will fail because the bucket is not empty.
+	s3BucketClient.Delete(t, "my-object")
+
+	require.Empty(t,
+		s3BucketClient.ListKeys(t, ""),
+	)
+}

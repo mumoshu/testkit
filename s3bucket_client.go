@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,6 +54,82 @@ func (c *S3BucketClient) GetString(t *testing.T, key string) string {
 	require.NoError(t, err)
 
 	return string(got)
+}
+
+// GetLatestString returns the latest object in the bucket with the given prefix.
+// The returned string is the content of the object.
+// "Latest" means the object with the latest LastModified timestamp.
+func (c *S3BucketClient) GetLatestString(t *testing.T, prefix string) string {
+	t.Helper()
+
+	listObjInput := &s3.ListObjectsV2Input{
+		Bucket: &c.Bucket,
+		Prefix: aws.String(prefix),
+	}
+	o, err := c.S3Svc.ListObjectsV2(context.Background(), listObjInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(o.Contents) == 0 {
+		t.Fatalf("no object found with prefix %q", prefix)
+	}
+
+	var latestObj *s3types.Object
+	for _, obj := range o.Contents {
+		o := obj
+		if latestObj == nil {
+			latestObj = &o
+			continue
+		}
+
+		if latestObj.LastModified == nil {
+			latestObj = &o
+			continue
+		}
+
+		if o.LastModified == nil {
+			continue
+		}
+
+		if latestObj.LastModified.Before(*o.LastModified) {
+			latestObj = &o
+		}
+	}
+
+	getObjInput := &s3.GetObjectInput{
+		Bucket: &c.Bucket,
+		Key:    latestObj.Key,
+	}
+	obj, err := c.S3Svc.GetObject(context.Background(), getObjInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(obj.Body)
+	require.NoError(t, err)
+
+	return string(got)
+}
+
+// ListKeys returns the keys of the objects in the bucket with the given prefix.
+func (c *S3BucketClient) ListKeys(t *testing.T, prefix string) []string {
+	t.Helper()
+
+	listObjInput := &s3.ListObjectsV2Input{
+		Bucket: &c.Bucket,
+		Prefix: aws.String(prefix),
+	}
+	o, err := c.S3Svc.ListObjectsV2(context.Background(), listObjInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var keys []string
+	for _, obj := range o.Contents {
+		keys = append(keys, *obj.Key)
+	}
+
+	return keys
 }
 
 func (c *S3BucketClient) Delete(t *testing.T, key string) {
