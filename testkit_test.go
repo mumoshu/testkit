@@ -126,6 +126,9 @@ func TestKindKubectl(t *testing.T) {
 	require.Equal(t, ns, ns2)
 	require.Equal(t, defaultCM1, defaultCM2)
 	require.Equal(t, nsCM1, nsCM2)
+
+	k := testkit.NewKubernetes(kc.KubeconfigPath)
+	require.Len(t, k.ListReadyNodeNames(t), 1)
 }
 
 func TestTerraform(t *testing.T) {
