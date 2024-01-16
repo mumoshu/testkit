@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -128,7 +129,13 @@ func TestKindKubectl(t *testing.T) {
 	require.Equal(t, nsCM1, nsCM2)
 
 	k := testkit.NewKubernetes(kc.KubeconfigPath)
-	require.Len(t, k.ListReadyNodeNames(t), 1)
+
+	testkit.PollUntil(t, func() bool {
+		return len(k.ListReadyNodeNames(t)) == 1
+	}, 20*time.Second)
+
+	helm := testkit.NewHelm(kc.KubeconfigPath)
+	helm.UpgradeOrInstall(t, "my-release", "testdata/helm-chart")
 }
 
 func TestTerraform(t *testing.T) {
