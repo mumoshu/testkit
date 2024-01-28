@@ -141,7 +141,7 @@ func New(t *testing.T, opts ...Option) *TestKit {
 // If the TestKit is created with the RetainResources option,
 // this function does nothing.
 func (tk *TestKit) Cleanup(t *testing.T) {
-	if tk.RetainResources || (t.Failed() && tk.RetainResourcesOnFailure) {
+	if !tk.CleanupNeeded(t) {
 		return
 	}
 
@@ -150,6 +150,21 @@ func (tk *TestKit) Cleanup(t *testing.T) {
 			t.Logf("failed to cleanup provider %v: %v", p, err)
 		}
 	}
+}
+
+// CleanupNeeded returns true if the test harness needs to be cleaned up.
+//
+// This takes into account the RetainResources and RetainResourcesOnFailure options and the test result.
+// If the RetainResources option is true, it returns false.
+// If the RetainResourcesOnFailure option is true and the test failed, it returns false.
+// Otherwise, it returns true.
+//
+// This is useful when you want to clean up resources unmanaged by the TestKit
+// respecting the RetainResources and RetainResourcesOnFailure options.
+func (tk *TestKit) CleanupNeeded(t *testing.T) bool {
+	retainResources := tk.RetainResources || (t.Failed() && tk.RetainResourcesOnFailure)
+
+	return !retainResources
 }
 
 type Provider interface {
