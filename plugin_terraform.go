@@ -27,6 +27,7 @@ type TerraformProvider struct {
 
 var _ S3BucketProvider = &TerraformProvider{}
 var _ EKSClusterProvider = &TerraformProvider{}
+var _ KubernetesClusterProvider = &TerraformProvider{}
 var _ Provider = &TerraformProvider{}
 
 func (p *TerraformProvider) GetEKSCluster(opts ...EKSClusterOption) (*EKSCluster, error) {
@@ -34,72 +35,110 @@ func (p *TerraformProvider) GetEKSCluster(opts ...EKSClusterOption) (*EKSCluster
 		return nil, fmt.Errorf("kubeconfigDir is not set")
 	}
 
-	resources, err := p.readEKSClusterResources(bytes.NewReader(p.tfShowJSONBytes))
+	resource, err := p.getEKSClusterResource()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, resource := range resources {
-		if resource.tfEKSClusterValues == nil {
-			continue
-		}
-
-		kubeconfigPath := filepath.Join(p.KubeconfigDir, "tfeks_"+resource.tfEKSClusterValues.ID+".kubeconfig")
-
-		kubeconfig := &Kubeconfig{}
-		kubeconfig.APIVersion = "v1"
-		kubeconfig.Kind = "Config"
-		kubeconfigClusterUserContextName := "testkit_" + resource.tfEKSClusterValues.ID
-		var (
-			cluster KubeconfigCluster
-			context KubeconfigContext
-			user    KubeconfigUser
-		)
-		cluster.Name = kubeconfigClusterUserContextName
-		cluster.Cluster.Server = resource.tfEKSClusterValues.Endpoint
-		cluster.Cluster.CertificateAuthorityData = resource.tfEKSClusterValues.CertificateAuthority[0].Data
-		context.Name = kubeconfigClusterUserContextName
-		context.Context.Cluster = kubeconfigClusterUserContextName
-		context.Context.User = kubeconfigClusterUserContextName
-		user.Name = kubeconfigClusterUserContextName
-		user.User.Exec.APIVersion = "client.authentication.k8s.io/v1beta1"
-		user.User.Exec.Command = "aws"
-		region := strings.Split(resource.tfEKSClusterValues.ARN, ":")[3]
-		user.User.Exec.Args = []string{
-			"--region",
-			region,
-			"eks",
-			"get-token",
-			"--cluster-name",
-			resource.tfEKSClusterValues.ID,
-			"--output",
-			"json",
-		}
-		kubeconfig.Clusters = []KubeconfigCluster{cluster}
-		kubeconfig.Contexts = []KubeconfigContext{context}
-		kubeconfig.Users = []KubeconfigUser{user}
-		kubeconfig.CurrentContext = kubeconfigClusterUserContextName
-
-		kubeconfigInYaml, err := yaml.Marshal(kubeconfig)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal kubeconfig: %v", err)
-		}
-
-		if err := os.MkdirAll(p.KubeconfigDir, 0755); err != nil {
-			return nil, fmt.Errorf("unable to create kubeconfig directory %q: %v", p.KubeconfigDir, err)
-		}
-
-		if err := os.WriteFile(kubeconfigPath, kubeconfigInYaml, 0644); err != nil {
-			return nil, fmt.Errorf("unable to write kubeconfig file: %v", err)
-		}
-
-		return &EKSCluster{
-			Endpoint:       resource.tfEKSClusterValues.Endpoint,
-			KubeconfigPath: kubeconfigPath,
-		}, nil
+	kubeconfigPath, err := p.generateKubeconfigFile(resource.tfEKSClusterValues)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("unable to find EKS cluster")
+	return &EKSCluster{
+		Endpoint:       resource.tfEKSClusterValues.Endpoint,
+		KubeconfigPath: kubeconfigPath,
+	}, nil
+}
+
+func (p *TerraformProvider) GetKubernetesCluster(opts ...KubernetesClusterOption) (*KubernetesCluster, error) {
+	var conf KubernetesClusterConfig
+
+	for _, opt := range opts {
+		opt(&conf)
+	}
+
+	resource, err := p.getEKSClusterResource()
+	if err != nil {
+		return nil, err
+	}
+
+	kubeconfigPath, err := p.generateKubeconfigFile(resource.tfEKSClusterValues)
+	if err != nil {
+		return nil, err
+	}
+
+	return &KubernetesCluster{
+		KubeconfigPath: kubeconfigPath,
+	}, nil
+}
+
+func (p *TerraformProvider) getEKSClusterResource() (tfResource, error) {
+	resources, err := p.readEKSClusterResources(bytes.NewReader(p.tfShowJSONBytes))
+	if err != nil {
+		return tfResource{}, err
+	}
+
+	for _, resource := range resources {
+		if resource.tfEKSClusterValues != nil {
+			return resource, nil
+		}
+	}
+
+	return tfResource{}, fmt.Errorf("unable to find EKS cluster resource")
+}
+
+func (p *TerraformProvider) generateKubeconfigFile(values *tfEKSClusterValues) (string, error) {
+	kubeconfigPath := filepath.Join(p.KubeconfigDir, "tfeks_"+values.ID+".kubeconfig")
+
+	kubeconfig := &Kubeconfig{}
+	kubeconfig.APIVersion = "v1"
+	kubeconfig.Kind = "Config"
+	kubeconfigClusterUserContextName := "testkit_" + values.ID
+	var (
+		cluster KubeconfigCluster
+		context KubeconfigContext
+		user    KubeconfigUser
+	)
+	cluster.Name = kubeconfigClusterUserContextName
+	cluster.Cluster.Server = values.Endpoint
+	cluster.Cluster.CertificateAuthorityData = values.CertificateAuthority[0].Data
+	context.Name = kubeconfigClusterUserContextName
+	context.Context.Cluster = kubeconfigClusterUserContextName
+	context.Context.User = kubeconfigClusterUserContextName
+	user.Name = kubeconfigClusterUserContextName
+	user.User.Exec.APIVersion = "client.authentication.k8s.io/v1beta1"
+	user.User.Exec.Command = "aws"
+	region := strings.Split(values.ARN, ":")[3]
+	user.User.Exec.Args = []string{
+		"--region",
+		region,
+		"eks",
+		"get-token",
+		"--cluster-name",
+		values.ID,
+		"--output",
+		"json",
+	}
+	kubeconfig.Clusters = []KubeconfigCluster{cluster}
+	kubeconfig.Contexts = []KubeconfigContext{context}
+	kubeconfig.Users = []KubeconfigUser{user}
+	kubeconfig.CurrentContext = kubeconfigClusterUserContextName
+
+	kubeconfigInYaml, err := yaml.Marshal(kubeconfig)
+	if err != nil {
+		return "", fmt.Errorf("unable to marshal kubeconfig: %v", err)
+	}
+
+	if err := os.MkdirAll(p.KubeconfigDir, 0755); err != nil {
+		return "", fmt.Errorf("unable to create kubeconfig directory %q: %v", p.KubeconfigDir, err)
+	}
+
+	if err := os.WriteFile(kubeconfigPath, kubeconfigInYaml, 0644); err != nil {
+		return "", fmt.Errorf("unable to write kubeconfig file: %v", err)
+	}
+
+	return kubeconfigPath, nil
 }
 
 type Kubeconfig struct {
