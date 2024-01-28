@@ -134,7 +134,10 @@ func (p *TerraformProvider) generateKubeconfigFile(values *tfEKSClusterValues) (
 		return "", fmt.Errorf("unable to create kubeconfig directory %q: %v", p.KubeconfigDir, err)
 	}
 
-	if err := os.WriteFile(kubeconfigPath, kubeconfigInYaml, 0644); err != nil {
+	// 0600 instead of 0644 for security, more concretely to avoid the following warnings:
+	//   WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /path/to/the/kubeconfig/file
+	//   WARNING: Kubernetes configuration file is world-readable. This is insecure. Location: /path/to/the/kubeconfig/file
+	if err := os.WriteFile(kubeconfigPath, kubeconfigInYaml, 0600); err != nil {
 		return "", fmt.Errorf("unable to write kubeconfig file: %v", err)
 	}
 
