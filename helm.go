@@ -95,5 +95,10 @@ func (k *Helm) capture(args ...string) (string, error) {
 	c.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", k.KubeconfigPath))
 
 	r, err := c.CombinedOutput()
-	return string(r), err
+	if err != nil {
+		errWithOutput := fmt.Errorf("error running helm command: %w, output: %s", err, string(r))
+		return string(r), errWithOutput
+	}
+
+	return string(r), nil
 }
