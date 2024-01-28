@@ -71,6 +71,13 @@ func (k *Helm) UpgradeOrInstall(t *testing.T, releaseName, chartPath string, opt
 	require.NoError(t, err)
 }
 
+func (k *Helm) AddRepo(t *testing.T, repoName, repoURL string) {
+	t.Helper()
+
+	_, err := k.capture("repo", "add", repoName, repoURL)
+	require.NoError(t, err)
+}
+
 func (k *Helm) Capture(t *testing.T, args ...string) string {
 	t.Helper()
 
