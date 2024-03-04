@@ -21,6 +21,9 @@ package testkit
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -70,7 +73,7 @@ func Providers(providers ...Provider) Option {
 // if the test fails.
 // This is useful for debugging.
 //
-// IF the Providers option is not empty, it uses the providers specified in the option.
+// If the Providers option is not empty, it uses the providers specified in the option.
 //
 // If providers is empty, it uses the default providers.
 // The default providers are the providers that are available
@@ -80,10 +83,54 @@ func Providers(providers ...Provider) Option {
 func New(t *testing.T, opts ...Option) *TestKit {
 	t.Helper()
 
+	tk, err := Build(opts...)
+	if err != nil {
+		t.Fatalf("failed to create TestKit: %v", err)
+	}
+
+	t.Cleanup(func() {
+		tk.Cleanup(t)
+	})
+
+	return tk
+}
+
+// Build creates a new TestKit harness.
+// This is a variant of New that does not automatically clean up the resources and
+// does not fail the test if it cannot create the TestKit.
+//
+// It's preferrable to use New instead of this function if you are writing a test
+// that does not share the test harness with other tests.
+//
+// If you do want to share the test harness with other tests, you can use this function
+// like this:
+//
+//	func TestMain(m *testing.M) {
+//		var opts []testkit.Option
+//		tk, err := testkit.Build(opts...)
+//		if err != nil {
+//			log.Fatalf("failed to create TestKit: %v", err)
+//		}
+//		defer tk.Cleanup()
+//
+//		os.Exit(m.Run())
+//	}
+func Build(opts ...Option) (*TestKit, error) {
 	var conf Config
 
 	for _, opt := range opts {
 		opt(&conf)
+	}
+
+	// Allow setting some settings via environment variables
+	{
+		if retainResources, ok := os.LookupEnv("TESTKIT_RETAIN_RESOURCES"); ok && retainResources == "true" {
+			conf.RetainResources = true
+		}
+
+		if retainResourcesOnFailure, ok := os.LookupEnv("TESTKIT_RETAIN_RESOURCES_ON_FAILURE"); ok && retainResourcesOnFailure == "true" {
+			conf.RetainResourcesOnFailure = true
+		}
 	}
 
 	if len(conf.Providers) == 0 {
@@ -104,21 +151,21 @@ func New(t *testing.T, opts ...Option) *TestKit {
 
 		for _, p := range defaultProviders {
 			if err := p.Setup(); err != nil {
-				t.Logf("skipped setting up failed provider %v: %v", p, err)
+				log.Printf("skipped setting up failed provider %v: %v", p, err)
 				continue
 			}
 			providers = append(providers, p)
 		}
 
 		if len(providers) == 0 {
-			t.Fatal("no provider out of the default providers is available")
+			return nil, fmt.Errorf("no provider out of the default providers is available")
 		}
 
 		conf.Providers = providers
 	} else {
 		for _, p := range conf.Providers {
 			if err := p.Setup(); err != nil {
-				t.Fatalf("failed to setup provider %v: %v", p, err)
+				return nil, fmt.Errorf("failed to setup provider %v: %v", p, err)
 			}
 		}
 	}
@@ -128,11 +175,7 @@ func New(t *testing.T, opts ...Option) *TestKit {
 		availableProviders: conf.Providers,
 	}
 
-	t.Cleanup(func() {
-		tk.Cleanup(t)
-	})
-
-	return tk
+	return tk, nil
 }
 
 // Cleanup cleans up all the resources created by the TestKit.

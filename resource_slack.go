@@ -7,9 +7,13 @@ type SlackChannelProvider interface {
 }
 
 type SlackChannel struct {
+	// ID is the name of the Slack channel.
 	ID                 string
-	Token              string
+	BotToken           string
+	AppToken           string
 	IncomingWebhookURL string
+
+	SlackMessaging
 }
 
 type SlackChannelConfig struct {
@@ -39,6 +43,8 @@ func (tk *TestKit) SlackChannel(t *testing.T, opts ...SlackChannelOption) *Slack
 	if err != nil {
 		t.Fatalf("unable to get Slack channel: %v", err)
 	}
+
+	slackCh.SlackMessaging = NewSlackMessagingClient(slackCh.BotToken, slackCh.ID)
 
 	return slackCh
 }

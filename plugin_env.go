@@ -87,9 +87,14 @@ func (p *EnvProvider) GetSlackChannel(_ ...SlackChannelOption) (*SlackChannel, e
 		return nil, fmt.Errorf("TESTKIT_SLACK_CHANNEL environment variable is not set")
 	}
 
-	token := os.Getenv("TESTKIT_SLACK_TOKEN")
-	if token == "" {
-		return nil, fmt.Errorf("TESTKIT_SLACK_TOKEN environment variable is not set")
+	botToken := os.Getenv("TESTKIT_SLACK_BOT_TOKEN")
+	if botToken == "" {
+		return nil, fmt.Errorf("TESTKIT_SLACK_BOT_TOKEN environment variable is not set")
+	}
+
+	appToken := os.Getenv("TESTKIT_SLACK_APP_TOKEN")
+	if appToken == "" {
+		return nil, fmt.Errorf("TESTKIT_SLACK_APP_TOKEN environment variable is not set")
 	}
 
 	inURL := os.Getenv("TESTKIT_SLACK_INCOMING_WEBHOOK_URL")
@@ -99,7 +104,8 @@ func (p *EnvProvider) GetSlackChannel(_ ...SlackChannelOption) (*SlackChannel, e
 
 	return &SlackChannel{
 		ID:                 channel,
-		Token:              token,
+		BotToken:           botToken,
+		AppToken:           appToken,
 		IncomingWebhookURL: inURL,
 	}, nil
 }

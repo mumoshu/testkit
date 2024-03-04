@@ -3,6 +3,8 @@ package testkit_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -10,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/mumoshu/testkit"
+	gitops_slack_bot "github.com/mumoshu/testkit/testapps/gitops-slack-bot"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +20,9 @@ func TestTestKit(t *testing.T) {
 	harness := testkit.New(t, testkit.Providers(
 		&testkit.KubectlProvider{},
 		&testkit.EKSCTLProvider{},
-		&testkit.TerraformProvider{},
+		&testkit.TerraformProvider{
+			WorkspacePath: "testdata/terraform",
+		},
 		&testkit.EnvProvider{},
 	))
 
@@ -222,4 +227,147 @@ func TestTerraformS3(t *testing.T) {
 	require.Empty(t,
 		s3BucketClient.ListKeys(t, ""),
 	)
+}
+
+// TestGitOpsSlackBot tests the example Slack bot that listens to /deploy commands
+// in the Slack channel to deploy something to the GitHub repository.
+//
+// The bot is implemented in the `testapps/gitops-slack-bot` directory.
+// The bot is written in golang and run within this test, not as a separate service in a container or a cluster.
+//
+// The bot is tested by sending a /deploy command to the Slack channel,
+// and then checking if the bot has created and merged a pull request with expected content against
+// the GitHub repository.
+//
+// The bot is connected with Slack by exposting the local HTTP endpoint served by the bot to the internet
+// via ngrok.
+// In a real-world scenario, the bot would be deployed to e.g. a Kubernetes cluster and exposed to the internet
+// via a LoadBalancer service. That can be done using our Terraform provider.
+func TestGitOpsSlackBot(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	h := testkit.New(t, testkit.Providers(
+		&testkit.GitHubWritableRepositoriesEnvProvider{},
+		&testkit.EnvProvider{},
+	), testkit.RetainResourcesOnFailure())
+
+	repo := h.GitHubWritableRepository(t)
+
+	ngrokConf := testkit.NgrokConfigFromEnv()
+
+	// Starts ngrok to expose the local HTTP endpoint to the internet
+	ln, err := testkit.ListenNgrok(t, ngrokConf)
+	require.NoError(t, err)
+
+	// Note that you need to register the ngrok's endpoint URL
+	// to the Slack incoming webhook configuration.
+
+	// We write the current time of the precision of a second to the repository via Slack
+	// so that we can verity that the bot has actually triggered by the /deploy
+	// message and written the content to the repository.
+	data := time.Now().Format(time.RFC3339)
+	commitMsg := "Deployed by testkit slack bot at " + data
+
+	triggerMessage := "/deploy"
+
+	bot, err := gitops_slack_bot.Start(ln, triggerMessage, func(message string) error {
+		return repo.WriteFileE("testkit.test", data, commitMsg)
+	})
+	require.NoError(t, err)
+
+	// And we presume that you've already registered the ngrok's external URL
+	// to the Slack incoming webhook configuration.
+	// Do also note that the URL is the one that is provided to the EnvProvider above
+	// and contained the h.SlackChannel return value below, which is used by PostMessage.
+
+	slackCh := h.SlackChannel(t)
+	slackCh.SendMessage(t, triggerMessage)
+
+	time.Sleep(5 * time.Second)
+
+	require.NoError(t, bot.LastError)
+
+	commits := repo.FindCommits(t, "main", "")
+	require.NotEmpty(t, commits)
+	require.Len(t, commits, 1)
+
+	commit := commits[0]
+
+	require.Equal(t, commitMsg, commit.Message)
+}
+
+// One-time test to verify the Slack challenge request to register the bot's endpoint URL.
+//
+// Set approprite env variables and run this once immediately after
+// starting the challenge on Slack.
+func TestSlackChallenge(t *testing.T) {
+	if os.Getenv("DO_SLACK_CHALLENGE") == "" {
+		t.Skip("Set DO_SLACK_CHALLENGE=1 to run this test")
+	}
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	ngrokConf := testkit.NgrokConfigFromEnv()
+
+	// Starts ngrok to expose the local HTTP endpoint to the internet
+	ln, err := testkit.ListenNgrok(t, ngrokConf)
+	require.NoError(t, err)
+
+	// Runs a http server that responds to Slack's challenge request
+	// to verify the endpoint URL.
+	// The server is expected to be exposed to the internet via ngrok.
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	type challengeRequest struct {
+		Token     string `json:"token"`
+		Challenge string `json:"challenge"`
+		Type      string `json:"type"`
+	}
+
+	var (
+		errCh = make(chan error, 1)
+
+		server = &http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req challengeRequest
+
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(req.Challenge))
+
+				cancel()
+			}),
+		}
+	)
+
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = server.Shutdown(ctx)
+	}()
+
+	go func() {
+		errCh <- server.Serve(ln)
+	}()
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-ctx.Done():
+		t.Fatalf("server.Serve: %v", ctx.Err())
+
+		// Wait for the server to shutdown gracefully
+		time.Sleep(5 * time.Second)
+	}
 }
