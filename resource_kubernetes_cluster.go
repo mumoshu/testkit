@@ -1,6 +1,9 @@
 package testkit
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 type KubernetesCluster struct {
 	// KubeconfigPath is the path to the kubeconfig file.
@@ -17,7 +20,7 @@ type KubernetesClusterProvider interface {
 	GetKubernetesCluster(...KubernetesClusterOption) (*KubernetesCluster, error)
 }
 
-func (tk *TestKit) KubernetesCluster(t *testing.T, opts ...KubernetesClusterOption) *KubernetesCluster {
+func (tk *TestKit) KubernetesClusterProvider() (KubernetesClusterProvider, error) {
 	var cp KubernetesClusterProvider
 	for _, p := range tk.availableProviders {
 		var ok bool
@@ -29,7 +32,18 @@ func (tk *TestKit) KubernetesCluster(t *testing.T, opts ...KubernetesClusterOpti
 	}
 
 	if cp == nil {
-		t.Fatal("no KubernetesClusterProvider found")
+		return nil, fmt.Errorf("no KubernetesClusterProvider found")
+	}
+
+	return cp, nil
+}
+
+func (tk *TestKit) KubernetesCluster(t *testing.T, opts ...KubernetesClusterOption) *KubernetesCluster {
+	t.Helper()
+
+	cp, err := tk.KubernetesClusterProvider()
+	if err != nil {
+		t.Fatalf("unable to get kubernetes cluster provider: %v", err)
 	}
 
 	kc, err := cp.GetKubernetesCluster(opts...)
