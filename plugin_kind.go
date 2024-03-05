@@ -77,9 +77,9 @@ func (p *KindProvider) GetKubernetesCluster(opts ...KubernetesClusterOption) (*K
 		if strings.HasPrefix(cn, clusterName) {
 			kubeconfigPath := p.clusterKubeconfigPath(cn)
 
-			_, err := p.capture(kubeconfigPath, "export", "kubeconfig", "--name", cn)
+			msg, err := p.capture(kubeconfigPath, "export", "kubeconfig", "--name", cn)
 			if err != nil {
-				return nil, fmt.Errorf("unable to export kubeconfig for cluster %s: %v", cn, err)
+				return nil, fmt.Errorf("unable to export kubeconfig for cluster %s: %v: %s", cn, err, msg)
 			}
 
 			return &KubernetesCluster{
