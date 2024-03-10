@@ -184,15 +184,31 @@ func Build(opts ...Option) (*TestKit, error) {
 // If the TestKit is created with the RetainResources option,
 // this function does nothing.
 func (tk *TestKit) Cleanup(t *testing.T) {
-	if !tk.CleanupNeeded(t) {
+	if !tk.CleanupNeeded(t.Failed()) {
 		return
 	}
 
+	errs := tk.DoCleanup()
+	for _, err := range errs {
+		t.Logf("%v", err)
+	}
+}
+
+// DoCleanup cleans up all the resources created by the TestKit.
+// It returns a list of errors that occurred during the cleanup.
+// The caller should call this function at the end of the test.
+// Note that this function does not respect the RetainResources and RetainResourcesOnFailure options.
+// If you want to respect these options, use the Cleanup function instead.
+func (tk *TestKit) DoCleanup() []error {
+	var errs []error
+
 	for _, p := range tk.availableProviders {
 		if err := p.Cleanup(); err != nil {
-			t.Logf("failed to cleanup provider %v: %v", p, err)
+			errs = append(errs, fmt.Errorf("failed to cleanup provider %v: %v", p, err))
 		}
 	}
+
+	return errs
 }
 
 // CleanupNeeded returns true if the test harness needs to be cleaned up.
@@ -204,8 +220,8 @@ func (tk *TestKit) Cleanup(t *testing.T) {
 //
 // This is useful when you want to clean up resources unmanaged by the TestKit
 // respecting the RetainResources and RetainResourcesOnFailure options.
-func (tk *TestKit) CleanupNeeded(t *testing.T) bool {
-	retainResources := tk.RetainResources || (t.Failed() && tk.RetainResourcesOnFailure)
+func (tk *TestKit) CleanupNeeded(failed bool) bool {
+	retainResources := tk.RetainResources || (failed && tk.RetainResourcesOnFailure)
 
 	return !retainResources
 }
