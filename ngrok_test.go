@@ -11,10 +11,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test and demonstrate how to use the Ngrok provider of TestKit
+// to expose a local server to the internet and run tests against it.
+//
+// Use this as a reference to write your own tests against your server
+// application using the Ngrok provider of TestKit.
 func TestNgrok(t *testing.T) {
+	// Start a Ngrok tunnel using TestKit
+
 	conf := NgrokConfigFromEnv()
 	ln, err := ListenNgrok(t, conf)
 	require.NoError(t, err)
+
+	// Start a server to be exposed via the Ngrok tunnel
+	// This is where you would typically start your server being tested.
 
 	go func() {
 		if err := http.Serve(ln, http.HandlerFunc(handler)); err != nil {
@@ -30,6 +40,9 @@ func TestNgrok(t *testing.T) {
 
 	time.Sleep(10 * time.Second)
 
+	// Verifies that the server is accessible via the ngrok tunnel
+	// This is where you would typically run your tests against the server.
+
 	res, err := http.Get(conf.EndpointURL)
 	require.NoError(t, err)
 
@@ -39,6 +52,9 @@ func TestNgrok(t *testing.T) {
 	require.Equal(t, "Hello from ngrok-go!\n", body)
 }
 
+// handler is a simple HTTP handler that responds with a message.
+// In a real-world scenario, this would be your server being tested.
+// It can be an HTTP server, a gRPC server, or any other server.
 func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello from ngrok-go!")
 }
