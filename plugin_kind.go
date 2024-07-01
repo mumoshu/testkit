@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/mumoshu/testkit/log"
 )
@@ -18,6 +19,18 @@ type KindProvider struct {
 
 	// kubeconfigDir is the directory where the kubeconfig files are stored.
 	kubeconfigDir string
+
+	// Wait for control plane node to be ready (default 0s)
+	Wait time.Duration
+
+	// node docker image to use for booting the cluster
+	Image string
+
+	// ConfigPath is the path to a kind configuration file
+	ConfigPath string
+
+	// Retain retains nodes for debugging when cluster creation fails
+	Retain bool
 
 	log.L
 }
@@ -132,7 +145,24 @@ func (p *KindProvider) GetKubernetesCluster(opts ...KubernetesClusterOption) (*K
 
 	kubeconfigPath := p.clusterKubeconfigPath(clusterName)
 
-	_, err := p.capture(kubeconfigPath, "create", "cluster", "--name", clusterName)
+	args := []string{"create", "cluster", "--name", clusterName}
+	if p.Wait > 0 {
+		args = append(args, "--wait", p.Wait.String())
+	}
+
+	if p.Image != "" {
+		args = append(args, "--image", p.Image)
+	}
+
+	if p.ConfigPath != "" {
+		args = append(args, "--config", p.ConfigPath)
+	}
+
+	if p.Retain {
+		args = append(args, "--retain")
+	}
+
+	_, err := p.capture(kubeconfigPath, args...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create cluster %s: %v", clusterName, err)
 	}
