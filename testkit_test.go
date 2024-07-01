@@ -115,7 +115,13 @@ func TestNew(t *testing.T) {
 func TestKindKubectl(t *testing.T) {
 	os.Unsetenv("KUBECONFIG")
 
+	os.Setenv("TESTKIT_LOG", "debug")
+
 	tk := testkit.New(t, testkit.Providers(&testkit.KindProvider{}))
+	// KindProvider creates a new Kubernetes cluster using kind
+	// on first call to KubernetesCluster.
+	// Setting TESTKIT_LOG=debug will show the kubeconfig path and
+	// content in the test output, for debugging purposes.
 	kc := tk.KubernetesCluster(t)
 
 	harness := testkit.New(t, testkit.Providers(&testkit.KubectlProvider{

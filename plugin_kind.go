@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/mumoshu/testkit/log"
 )
 
 type KindProvider struct {
@@ -16,6 +18,8 @@ type KindProvider struct {
 
 	// kubeconfigDir is the directory where the kubeconfig files are stored.
 	kubeconfigDir string
+
+	log.L
 }
 
 var _ Provider = &KindProvider{}
@@ -133,9 +137,24 @@ func (p *KindProvider) GetKubernetesCluster(opts ...KubernetesClusterOption) (*K
 		return nil, fmt.Errorf("unable to create cluster %s: %v", clusterName, err)
 	}
 
+	p.Debugf("Exported kubeconfig for cluster %s: %s", clusterName, filecontentLogVar{kubeconfigPath})
+
 	p.clusterNames[clusterName] = struct{}{}
 
 	return &KubernetesCluster{
 		KubeconfigPath: kubeconfigPath,
 	}, nil
+}
+
+type filecontentLogVar struct {
+	path string
+}
+
+func (v filecontentLogVar) String() string {
+	b, err := os.ReadFile(v.path)
+	if err != nil {
+		return fmt.Sprintf("failed to read file %s: %v", v.path, err)
+	}
+
+	return fmt.Sprintf("file %s: %s", v.path, string(b))
 }
