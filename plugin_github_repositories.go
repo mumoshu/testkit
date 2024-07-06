@@ -53,14 +53,19 @@ func (p *GitHubWritableRepositoriesEnvProvider) GetGitHubWritableRepository(opts
 		opt(&conf)
 	}
 
-	repos := os.Getenv("TESTKIT_GITHUB_WRITEABLE_REPOS")
+	const (
+		EnvRepo  = "TESTKIT_GITHUB_WRITEABLE_REPOS"
+		EnvToken = "TESTKIT_GITHUB_TOKEN"
+	)
+
+	repos := os.Getenv(EnvRepo)
 	if repos == "" {
-		return nil, fmt.Errorf("TESTKIT_GITHUB_WRITEABLE_REPOS environment variable is not set")
+		return nil, fmt.Errorf("%s environment variable is not set", EnvRepo)
 	}
 
-	token := os.Getenv("TESTKIT_GITHUB_TOKEN")
+	token := os.Getenv(EnvToken)
 	if token == "" {
-		return nil, fmt.Errorf("TESTKIT_GITHUB_TOKEN environment variable is not set")
+		return nil, fmt.Errorf("%s environment variable is not set", EnvToken)
 	}
 
 	svc := &git.GitHubRepositories{
