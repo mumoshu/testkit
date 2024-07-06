@@ -3,7 +3,6 @@ package testkit
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -78,8 +77,7 @@ func (p *GitHubWritableRepositoriesEnvProvider) GetGitHubWritableRepository(opts
 		}
 		contentBytes, err := svc.GetFileContent(context.Background(), b, ".testkit.writable")
 		if err != nil {
-			log.Printf("failed to get .testkit.writable file content from %s: %v", r, err)
-			continue
+			return nil, fmt.Errorf("failed to get .testkit.writable file content from %s. This could be due to invalid or expired git credentials or network problem: %v", r, err)
 		}
 
 		contentStr := strings.TrimSpace(string(contentBytes))
