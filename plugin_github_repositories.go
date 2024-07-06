@@ -99,6 +99,7 @@ func (p *GitHubWritableRepositoriesEnvProvider) GetGitHubWritableRepository(opts
 			Repo:  repo,
 		}
 
+		//lint:ignore SA4004 we want to return the first writeable repository found
 		return &GitHubWritableRepository{
 			Name:    r,
 			Token:   token,
