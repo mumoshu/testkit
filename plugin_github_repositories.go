@@ -106,5 +106,8 @@ func (p *GitHubWritableRepositoriesEnvProvider) GetGitHubWritableRepository(opts
 		}, nil
 	}
 
-	return nil, fmt.Errorf("no writable repository found")
+	return nil, fmt.Errorf(
+		"no writable repository found out of %q: At least one of the repositories must have .testkit.writable file",
+		repos,
+	)
 }
