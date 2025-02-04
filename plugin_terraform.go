@@ -19,6 +19,16 @@ type TerraformProvider struct {
 	// Vars is the map of Terraform variables.
 	Vars map[string]string
 
+	// BackendConfig is the map of Terraform backend configuration.
+	// For example, to configure the S3 backend, the configuration is:
+	//
+	// 	BackendConfig: map[string]string{
+	// 		"bucket": "my-terraform-state",
+	// 		"key":    "path/to/terraform.tfstate",
+	// 		"region": "us-east-1",
+	// 	},
+	BackendConfig map[string]string
+
 	// KubeconfigDir is the directory where the kubeconfig files for EKS clusters are stored.
 	KubeconfigDir string
 
@@ -322,6 +332,18 @@ func (p *TerraformProvider) runTerraformCommand(args ...string) ([]byte, error) 
 	return p.runTerraformCommandNoVars(argsWithVars...)
 }
 
+func (p *TerraformProvider) runTerraformInit() ([]byte, error) {
+	var args []string
+
+	args = append(args, "init")
+
+	for k, v := range p.BackendConfig {
+		args = append(args, "-backend-config", k+"="+v)
+	}
+
+	return p.runTerraformCommand(args...)
+}
+
 func (p *TerraformProvider) runTerraformCommandNoVars(args ...string) ([]byte, error) {
 	c := exec.Command("terraform", args...)
 	c.Dir = p.WorkspacePath
@@ -443,7 +465,7 @@ func (p *TerraformProvider) Setup() error {
 		p.Vars = make(map[string]string)
 	}
 
-	_, err = p.runTerraformCommand("init")
+	_, err = p.runTerraformInit()
 	if err != nil {
 		return fmt.Errorf("unable to run terraform init: %v", err)
 	}
