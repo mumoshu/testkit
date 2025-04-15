@@ -25,6 +25,7 @@ type HelmConfig struct {
 	ExtraArgs []string
 	Namespace string
 	Values    map[string]interface{}
+	Version   string
 }
 
 type HelmOption func(*HelmConfig)
@@ -46,6 +47,10 @@ func (k *Helm) UpgradeOrInstall(t *testing.T, releaseName, chartPath string, opt
 
 	args = append(args, "upgrade", "--install", releaseName, chartPath)
 	args = append(args, "--wait", "--timeout", "5m", "--create-namespace", "--atomic", "--debug")
+
+	if c.Version != "" {
+		args = append(args, "--version", c.Version)
+	}
 
 	if c.Values != nil {
 		args = append(args, "--values", "values.yaml")
