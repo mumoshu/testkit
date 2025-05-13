@@ -83,6 +83,13 @@ func (k *Helm) AddRepo(t *testing.T, repoName, repoURL string) {
 	require.NoError(t, err)
 }
 
+func (k *Helm) UpdateRepo(t *testing.T, repoName string) {
+	t.Helper()
+
+	_, err := k.capture("repo", "update", repoName)
+	require.NoError(t, err)
+}
+
 func (k *Helm) Capture(t *testing.T, args ...string) string {
 	t.Helper()
 
